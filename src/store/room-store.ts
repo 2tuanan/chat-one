@@ -10,7 +10,6 @@ export interface RoomStore {
   setActiveRoom: (id: string | null) => void;
   updateUnreadCount: (roomId: string, delta: number) => void;
   resetUnreadCount: (roomId: string) => void;
-  selectRoomList: () => Room[];
   selectActiveRoom: () => Room | undefined;
 }
 
@@ -49,13 +48,6 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
       unreadCounts.set(roomId, 0);
       return { unreadCounts };
     }),
-  selectRoomList: () => {
-    const rooms = Array.from(get().rooms.values());
-    return rooms.sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-    );
-  },
   selectActiveRoom: () => {
     const activeRoomId = get().activeRoomId;
     if (!activeRoomId) {

@@ -30,3 +30,18 @@ Fix: Add id as secondary sort key if ordering issues appear
 Source: Story 1.2 QA
 Impact: Low — paths exercised but not directly asserted
 Fix: Add explicit assertions on Day 14 coverage pass
+
+## TD-07 — jsdom/RTL setup missing
+Source: Story 1.3 QA
+Impact: Server action integration tests and dialog 
+component tests cannot run until jsdom configured
+Fix: Add environment: "jsdom" to vitest.config.ts
+and install @testing-library/react when component 
+tests are needed (Day 14 buffer)
+
+## TD-08 — useEffect(,[]) exhaustive-deps risk
+Source: Story 1.3 QA
+Impact: None until react-hooks/exhaustive-deps lint
+rule is enabled
+Fix: Replace with useRef guard pattern if lint rule
+added: const hydrated = useRef(false)

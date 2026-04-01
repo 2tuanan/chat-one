@@ -39,14 +39,13 @@ describe("room store", () => {
     expect(state.unreadCounts.size).toBe(0);
   });
 
-  it("sets rooms and returns sorted list", () => {
+  it("sets rooms from an array", () => {
     useRoomStore.getState().setRooms([roomB, roomA]);
 
     const state = useRoomStore.getState();
     expect(state.rooms.size).toBe(2);
-
-    const sorted = state.selectRoomList();
-    expect(sorted.map((room) => room.id)).toEqual(["room-a", "room-b"]);
+    expect(state.rooms.get("room-a")).toEqual(roomA);
+    expect(state.rooms.get("room-b")).toEqual(roomB);
   });
 
   it("adds a room without clearing existing rooms", () => {
