@@ -1,6 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Hash } from "lucide-react";
 import type { Room } from "@/types/rooms";
 
@@ -17,10 +18,17 @@ export default function RoomItem({
   unreadCount,
   onSelect,
 }: RoomItemProps) {
+  const router = useRouter();
+
+  const handleNavigate = () => {
+    onSelect();
+    router.push(`/chat/${room.id}`);
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onSelect();
+      handleNavigate();
     }
   };
 
@@ -28,7 +36,8 @@ export default function RoomItem({
     <div
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      aria-pressed={isActive}
+      onClick={handleNavigate}
       onKeyDown={handleKeyDown}
       className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm transition ${
         isActive

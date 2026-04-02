@@ -45,3 +45,17 @@ Impact: None until react-hooks/exhaustive-deps lint
 rule is enabled
 Fix: Replace with useRef guard pattern if lint rule
 added: const hydrated = useRef(false)
+
+## TD-09 — isValidRoomId accepts non-UUID structure
+Source: Story 1.4 QA
+Impact: None — RLS + member guard handle invalid IDs
+Fix: Replace regex with proper UUID v4 validation:
+/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab]
+[0-9a-f]{3}-[0-9a-f]{12}$/i
+
+## TD-10 — appendNewMessage no dedup by message id
+Source: Story 1.4 QA (intentional, Story 2.1 concern)
+Impact: Duplicate message if Realtime fires twice
+for foreign sender — rare in practice
+Fix: Add id-based dedup in appendNewMessage or
+in use-realtime-messages.ts in Story 2.1
