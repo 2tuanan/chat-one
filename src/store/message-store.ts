@@ -62,13 +62,17 @@ export const useMessageStore = create<MessageStore>((set) => ({
 
         const nextRoomMessages = [...roomMessages];
         nextRoomMessages[index] = realMsg;
+        // Remove CDC-appended duplicate that arrived before this confirmation ran
+        const deduped = nextRoomMessages.filter(
+          (m, i) => i === index || m.id !== realMsg.id,
+        );
 
         if (!found) {
           updatedMessages = new Map(state.messages);
           found = true;
         }
 
-        updatedMessages.set(roomId, nextRoomMessages);
+        updatedMessages.set(roomId, deduped);
         break;
       }
 
@@ -174,6 +178,10 @@ export const useMessageStore = create<MessageStore>((set) => ({
     set((state) => {
       const messages = new Map(state.messages);
       const roomMessages = messages.get(roomId) ?? [];
+      const alreadyPresent = roomMessages.some((m) => m.id === msg.id);
+      if (alreadyPresent) {
+        return state;
+      }
       messages.set(roomId, [...roomMessages, msg]);
       return { messages };
     }),

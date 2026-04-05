@@ -162,4 +162,39 @@ describe("message store", () => {
     expect(state.pendingIds.has("temp-5")).toBe(false);
     expect(state.messages.has("room-2")).toBe(true);
   });
+
+  it("confirmMessage deduplicates CDC-appended duplicate (Q3 race condition)", () => {
+    // Simulate: CDC fires before confirmMessage — real message already in store
+    const tempId = "temp-race";
+    const optimistic = buildOptimisticMessage({
+      id: tempId,
+      temp_id: tempId,
+    });
+    const confirmed = buildMessage({ id: "message-real" });
+
+    // Step 1: optimistic message added
+    useMessageStore.getState().addOptimisticMessage("room-1", optimistic);
+
+    // Step 2: CDC fires first — appends the real message (temp id not present, dedup misses)
+    useMessageStore.getState().appendNewMessage("room-1", confirmed);
+
+    // Step 3: confirmMessage runs — must replace optimistic AND remove CDC duplicate
+    useMessageStore.getState().confirmMessage(tempId, confirmed);
+
+    const roomMessages = useMessageStore.getState().messages.get("room-1") ?? [];
+    expect(roomMessages).toHaveLength(1);
+    expect(roomMessages[0]).toEqual(confirmed);
+  });
+
+  it("appendNewMessage is a true no-op (no state change) when message id is already present", () => {
+    const message = buildMessage({ id: "message-dupe" });
+    useMessageStore.getState().appendNewMessage("room-1", message);
+
+    const stateBefore = useMessageStore.getState();
+    useMessageStore.getState().appendNewMessage("room-1", message);
+    const stateAfter = useMessageStore.getState();
+
+    // Zustand state reference must be unchanged — true no-op
+    expect(stateAfter).toBe(stateBefore);
+  });
 });
