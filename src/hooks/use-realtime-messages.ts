@@ -40,7 +40,10 @@ export function useRealtimeMessages({
     }
 
     const supabase = getBrowserClient();
+
     const channel = supabase.channel(`room:${roomId}`);
+
+    console.debug("[realtime] subscribing to room:", roomId);
 
     channel
       .on(
@@ -54,11 +57,9 @@ export function useRealtimeMessages({
         async (
           payload: RealtimePostgresChangesPayload<MessageInsertPayload>,
         ) => {
-          const next = payload.new as MessageInsertPayload;
+          console.debug("[realtime] payload received:", payload);
 
-          if (next.sender_id === currentUserId) {
-            return;
-          }
+          const next = payload.new as MessageInsertPayload;
 
           const { data, error } = await supabase
             .from("messages")
@@ -69,15 +70,28 @@ export function useRealtimeMessages({
             .single();
 
           if (error || !data) {
+            console.warn("[realtime] fetch message failed:", error);
             return;
           }
 
           appendNewMessage(roomId, normalizeMessage(data as RawMessage));
         },
       )
-      .subscribe();
+      .subscribe((status: string, err?: Error) => {
+        if (status === "SUBSCRIBED") {
+          console.debug("[realtime] subscribed to room:", roomId);
+        }
+        if (status === "CHANNEL_ERROR") {
+          console.error("[realtime] channel error:", err);
+          // TODO Sprint 2: add exponential backoff reconnect (R1 in risk matrix)
+        }
+        if (status === "TIMED_OUT") {
+          console.warn("[realtime] subscription timed out for room:", roomId);
+        }
+      })
 
     return () => {
+      console.debug("[realtime] removing channel for room:", roomId);
       supabase.removeChannel(channel);
     };
   }, [roomId, currentUserId, appendNewMessage]);

@@ -197,5 +197,7 @@ create policy "Users can update own receipts"
   with check (user_id = auth.uid());
 
 -- enable realtime
-alter publication supabase_realtime 
+alter table public.messages replica identity full;
+
+alter publication supabase_realtime
   add table public.messages;

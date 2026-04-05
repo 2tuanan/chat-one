@@ -65,16 +65,16 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   const room = roomData as RoomRow;
   const memberCount = room.room_members?.length ?? 0;
-  const messages = messagesError || !messagesData
-    ? []
-    : (messagesData as RawMessage[])
-      .map((message) => normalizeMessage(message))
-        .reverse();
+    const initialMessages = messagesError || !messagesData
+      ? []
+      : (messagesData as RawMessage[])
+        .reverse()
+        .map((message) => normalizeMessage(message));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ChatHeader room={room} memberCount={memberCount} />
-      <MessageList roomId={roomId} initialMessages={messages} />
+      <MessageList roomId={roomId} initialMessages={initialMessages} />
       <MessageInput roomId={roomId} />
     </div>
   );

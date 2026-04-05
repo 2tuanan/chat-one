@@ -51,9 +51,10 @@ for each row execute function public.handle_new_user();
 alter table public.profiles enable row level security;
 
 drop policy if exists "Profiles are viewable by users" on public.profiles;
-create policy "Profiles are viewable by users"
+create policy "Profiles are viewable by authenticated users"
 on public.profiles for select
-using (auth.uid() = id);
+to authenticated
+using (true);
 
 drop policy if exists "Users can update their profile" on public.profiles;
 create policy "Users can update their profile"
