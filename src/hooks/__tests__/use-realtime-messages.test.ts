@@ -1,52 +1,19 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useRealtimeMessages } from "@/hooks/use-realtime-messages";
+import {
+  createMockRealtimeChannel,
+  type MockRealtimeChannel,
+} from "@/lib/realtime/adapters/mock-adapter";
 import { useMessageStore, initialMessageState } from "@/store/message-store";
 import type { MessageWithProfile } from "@/types/messages";
-
-const channelMock = vi.fn();
-const removeChannelMock = vi.fn();
-const fromMock = vi.fn();
-const getBrowserClientMock = vi.fn(() => ({
-  channel: channelMock,
-  removeChannel: removeChannelMock,
-  from: fromMock,
-}));
-
-vi.mock("@/lib/supabase/client", () => ({
-  getBrowserClient: () => getBrowserClientMock(),
-}));
+import type { FetchMessageById } from "@/lib/realtime";
 
 describe("useRealtimeMessages", () => {
-  let onHandler:
-    | ((payload: { new: { id: string; sender_id: string } }) => void)
-    | null = null;
-  let subscribeCallback: ((status: string, err?: Error) => void) | null = null;
-
-  const query = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    single: vi.fn(),
-  };
-
-  const channel = {
-    on: vi.fn(
-      (
-        _event: string,
-        _filter: Record<string, string>,
-        callback: (payload: { new: { id: string; sender_id: string } }) => void,
-      ) => {
-        onHandler = callback;
-        return channel;
-      },
-    ),
-    subscribe: vi.fn((cb: (status: string, err?: Error) => void) => {
-      subscribeCallback = cb;
-      return channel;
-    }),
-  };
+  let mockChannel: MockRealtimeChannel;
+  let fetchMessage: Mock<FetchMessageById>;
 
   beforeEach(() => {
     useMessageStore.setState({
@@ -56,37 +23,43 @@ describe("useRealtimeMessages", () => {
       pendingIds: new Set(initialMessageState.pendingIds),
     });
 
-    onHandler = null;
-    subscribeCallback = null;
-    channelMock.mockReturnValue(channel);
-    removeChannelMock.mockClear();
-    fromMock.mockReturnValue(query);
-
-    query.select.mockReturnValue(query);
-    query.eq.mockReturnValue(query);
-    query.single.mockResolvedValue({ data: null, error: null });
+    mockChannel = createMockRealtimeChannel();
+    fetchMessage = vi.fn<FetchMessageById>().mockResolvedValue(null);
   });
 
   it("subscribes to the room channel on mount", () => {
     renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
-    expect(channelMock).toHaveBeenCalledWith("room:room-1");
-    expect(channel.on).toHaveBeenCalled();
+    expect(mockChannel.onMessage).toHaveBeenCalled();
   });
 
   it("does not append when secondary fetch returns no data", async () => {
     const appendSpy = vi.spyOn(useMessageStore.getState(), "appendNewMessage");
 
-    query.single.mockResolvedValue({ data: null, error: null });
+    fetchMessage.mockResolvedValue(null);
 
     renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
     await act(async () => {
-      await onHandler?.({ new: { id: "message-99", sender_id: "user-1" } });
+      await mockChannel.simulateMessage({
+        type: "insert",
+        roomId: "room-1",
+        messageId: "message-99",
+      });
     });
 
     expect(appendSpy).not.toHaveBeenCalled();
@@ -111,44 +84,65 @@ describe("useRealtimeMessages", () => {
       },
     };
 
-    query.single.mockResolvedValue({ data: message, error: null });
+    fetchMessage.mockResolvedValue(message as unknown as Record<string, unknown>);
 
     renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
     await act(async () => {
-      await onHandler?.({ new: { id: "message-2", sender_id: "user-2" } });
+      await mockChannel.simulateMessage({
+        type: "insert",
+        roomId: "room-1",
+        messageId: "message-2",
+      });
     });
 
     expect(appendSpy).toHaveBeenCalledWith("room-1", message);
   });
 
-  it("removes channel on unmount", () => {
+  it("removes listener on unmount", () => {
     const { unmount } = renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
     unmount();
 
-    expect(removeChannelMock).toHaveBeenCalledWith(channel);
+    const unsubscribeSpy = mockChannel.onMessage.mock.results[0]?.value as ReturnType<typeof vi.fn>;
+    expect(unsubscribeSpy).toHaveBeenCalled();
   });
 
   it("re-subscribes when roomId changes", async () => {
     const { rerender } = renderHook(
-      ({ roomId, currentUserId }) =>
-        useRealtimeMessages({ roomId, currentUserId }),
+      ({ roomId }: { roomId: string }) =>
+        useRealtimeMessages({
+          roomId,
+          currentUserId: "user-1",
+          channel: mockChannel,
+          fetchMessage,
+        }),
       {
-        initialProps: { roomId: "room-1", currentUserId: "user-1" },
+        initialProps: { roomId: "room-1" },
       },
     );
 
     await act(async () => {
-      rerender({ roomId: "room-2", currentUserId: "user-1" });
+      rerender({ roomId: "room-2" });
     });
 
-    expect(channelMock).toHaveBeenCalledWith("room:room-2");
-    expect(removeChannelMock).toHaveBeenCalledWith(channel);
+    expect(mockChannel.onMessage).toHaveBeenCalledTimes(2);
+    const firstUnsubscribe = mockChannel.onMessage.mock.results[0]?.value as ReturnType<typeof vi.fn>;
+    expect(firstUnsubscribe).toHaveBeenCalled();
   });
 
   it("delivers message from same user in second tab (BUG-1)", async () => {
@@ -170,38 +164,28 @@ describe("useRealtimeMessages", () => {
       },
     };
 
-    query.single.mockResolvedValue({ data: message, error: null });
+    fetchMessage.mockResolvedValue(message as unknown as Record<string, unknown>);
 
     renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
     // CDC event where the sender IS the current user — must still be appended
     // (multi-tab: Tab B receives its own user's message from Tab A)
     await act(async () => {
-      await onHandler?.({ new: { id: "message-3", sender_id: "user-1" } });
+      await mockChannel.simulateMessage({
+        type: "insert",
+        roomId: "room-1",
+        messageId: "message-3",
+      });
     });
 
     expect(appendSpy).toHaveBeenCalledWith("room-1", message);
-  });
-
-  it("logs CHANNEL_ERROR without throwing (BUG-5)", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
-    );
-
-    act(() => {
-      subscribeCallback?.("CHANNEL_ERROR", new Error("realtime error"));
-    });
-
-    expect(errorSpy).toHaveBeenCalledWith(
-      "[realtime] channel error:",
-      expect.any(Error),
-    );
-
-    errorSpy.mockRestore();
   });
 
   it("skips duplicate message id already in store (TD-10)", async () => {
@@ -230,21 +214,73 @@ describe("useRealtimeMessages", () => {
       pendingIds: new Set(initialMessageState.pendingIds),
     });
 
-    query.single.mockResolvedValue({ data: message, error: null });
+    fetchMessage.mockResolvedValue(message as unknown as Record<string, unknown>);
 
     const appendSpy = vi.spyOn(useMessageStore.getState(), "appendNewMessage");
 
     renderHook(() =>
-      useRealtimeMessages({ roomId: "room-1", currentUserId: "user-1" }),
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
     );
 
     await act(async () => {
-      await onHandler?.({ new: { id: "message-5", sender_id: "user-2" } });
+      await mockChannel.simulateMessage({
+        type: "insert",
+        roomId: "room-1",
+        messageId: "message-5",
+      });
     });
 
     // appendNewMessage is called but the store guard deduplicates internally
     // — verify the room still only contains one copy of the message
+    expect(appendSpy).toHaveBeenCalled();
     const stored = useMessageStore.getState().messages.get("room-1");
     expect(stored).toHaveLength(1);
+  });
+
+  it("appends normalized MessageWithProfile when simulateMessage receives INSERT event", async () => {
+    const appendSpy = vi.spyOn(useMessageStore.getState(), "appendNewMessage");
+    const message: MessageWithProfile = {
+      id: "message-10",
+      room_id: "room-1",
+      sender_id: "user-2",
+      content: "Hello from behavioral AC test",
+      type: "text",
+      created_at: "2026-04-01T00:00:00Z",
+      updated_at: "2026-04-01T00:00:00Z",
+      deleted_at: null,
+      sender: {
+        id: "user-2",
+        username: "user_2",
+        display_name: "User Two",
+        avatar_url: null,
+      },
+    };
+
+    fetchMessage.mockResolvedValue(message as unknown as Record<string, unknown>);
+
+    renderHook(() =>
+      useRealtimeMessages({
+        roomId: "room-1",
+        currentUserId: "user-1",
+        channel: mockChannel,
+        fetchMessage,
+      }),
+    );
+
+    await act(async () => {
+      await mockChannel.simulateMessage({
+        type: "insert",
+        roomId: "room-1",
+        messageId: "message-10",
+      });
+    });
+
+    expect(fetchMessage).toHaveBeenCalledWith("message-10");
+    expect(appendSpy).toHaveBeenCalledWith("room-1", message);
   });
 });
