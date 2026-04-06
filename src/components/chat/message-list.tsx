@@ -7,7 +7,6 @@ import { useMessageStore } from "@/store/message-store";
 import { useRoomStore } from "@/store/room-store";
 import type { MessageWithProfile, OptimisticMessage } from "@/types/messages";
 import MessageItem from "@/components/chat/message-item";
-import { useChatMessages } from "@/hooks/use-chat-messages";
 import { sendMessage } from "@/actions/messages";
 
 type MessageListProps = {
@@ -33,8 +32,6 @@ export default function MessageList({ roomId, initialMessages }: MessageListProp
   const messages = useMessageStore(
     useShallow((state) => state.messages.get(roomId) ?? []),
   );
-
-  useChatMessages(roomId, currentUserId);
 
   useEffect(() => {
     if (hydratedRoomId.current === roomId) {

@@ -7,12 +7,17 @@ import {
 } from "@/lib/realtime";
 import type { RealtimeChannel } from "@/lib/realtime";
 import { useRealtimeMessages } from "./use-realtime-messages";
+import { useTyping } from "./use-typing-indicator";
+import { useAuthStore } from "@/store/auth-store";
+import type { ChatMessagesReturn } from "@/types/messages";
 
 export function useChatMessages(
   roomId: string,
   currentUserId: string | null,
-): void {
+): ChatMessagesReturn {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+
+  const username = useAuthStore((state) => state.profile?.username ?? null);
 
   // Effect A: create channel, no subscribe yet — subscribe must happen after
   // useRealtimeMessages wires its inner.on() listener (Effect B below).
@@ -38,6 +43,8 @@ export function useChatMessages(
     fetchMessage: supabaseFetchMessageById,
   });
 
+  const { typingUsers, broadcastTyping } = useTyping(channel, currentUserId, username);
+
   // Effect B: subscribe only after useRealtimeMessages has wired its listener.
   // SupabaseChannel.subscribe() is idempotent — safe to call on stale channels
   // during roomId-change transitions (disposed channels ignore the call).
@@ -54,4 +61,7 @@ export function useChatMessages(
       }
     });
   }, [channel, roomId]);
+
+  return { broadcastTyping, typingUsers };
 }
+

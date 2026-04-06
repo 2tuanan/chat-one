@@ -63,7 +63,7 @@ describe("MessageInput", () => {
 
     sendMessageMock.mockResolvedValue({ message });
 
-    render(<MessageInput roomId="room-1" />);
+    render(<MessageInput roomId="room-1" broadcastTyping={vi.fn()} />);
 
     const textarea = screen.getByLabelText("Message");
     await userEvent.type(textarea, "Hello");
@@ -77,7 +77,7 @@ describe("MessageInput", () => {
   });
 
   it("inserts a newline on Shift+Enter", async () => {
-    render(<MessageInput roomId="room-1" />);
+    render(<MessageInput roomId="room-1" broadcastTyping={vi.fn()} />);
 
     const textarea = screen.getByLabelText("Message");
     await userEvent.type(textarea, "Hello");
@@ -108,7 +108,7 @@ describe("MessageInput", () => {
 
     sendMessageMock.mockResolvedValue({ message });
 
-    render(<MessageInput roomId="room-1" />);
+    render(<MessageInput roomId="room-1" broadcastTyping={vi.fn()} />);
 
     const textarea = screen.getByLabelText("Message");
     await userEvent.type(textarea, "Hello");

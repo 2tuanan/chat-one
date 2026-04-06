@@ -22,3 +22,19 @@ export interface OptimisticMessage extends MessageWithProfile {
   status: MessageStatus;
   temp_id: string;
 }
+
+export interface TypingUser {
+  user_id: string;
+  username: string;
+  expires_at: number;
+}
+
+export interface UseTypingReturn {
+  typingUsers: TypingUser[];
+  broadcastTyping: (isTyping: boolean) => void;
+}
+
+export interface ChatMessagesReturn {
+  broadcastTyping: (isTyping: boolean) => void;
+  typingUsers: TypingUser[];
+}

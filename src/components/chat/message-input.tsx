@@ -16,9 +16,10 @@ import type { OptimisticMessage } from "@/types/messages";
 
 type MessageInputProps = {
   roomId: string;
+  broadcastTyping: (isTyping: boolean) => void;
 };
 
-export default function MessageInput({ roomId }: MessageInputProps) {
+export default function MessageInput({ roomId, broadcastTyping }: MessageInputProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -82,19 +83,23 @@ export default function MessageInput({ roomId }: MessageInputProps) {
           message,
         });
         failMessage(tempId);
+        broadcastTyping(false);
         return;
       }
 
       if (result.error || !result.message) {
         setSubmitError(result.error ?? "Unable to send message.");
         failMessage(tempId);
+        broadcastTyping(false);
         return;
       }
 
       confirmMessage(tempId, result.message);
       form.reset({ content: "" });
+      broadcastTyping(false);
     } catch {
       failMessage(tempId);
+      broadcastTyping(false);
     } finally {
       textareaRef.current?.focus();
     }
@@ -116,6 +121,13 @@ export default function MessageInput({ roomId }: MessageInputProps) {
             className="min-h-[48px] w-full resize-none rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none"
             placeholder="Write a message..."
             {...contentField}
+            onChange={(e) => {
+              contentField.onChange(e);
+              broadcastTyping(true);
+            }}
+            onBlur={() => {
+              broadcastTyping(false);
+            }}
             ref={(element) => {
               contentField.ref(element);
               textareaRef.current = element;

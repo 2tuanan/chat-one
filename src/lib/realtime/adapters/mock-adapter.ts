@@ -12,6 +12,7 @@ import type {
 
 export class MockRealtimeChannel implements RealtimeChannel {
   private _messageHandlers: Array<(event: MessageEvent) => void | Promise<void>> = [];
+  private _broadcastHandlers: Map<string, Array<(payload: BroadcastPayload) => void>> = new Map();
   private _status: RealtimeStatus = "connecting";
 
   get status(): RealtimeStatus {
@@ -32,10 +33,20 @@ export class MockRealtimeChannel implements RealtimeChannel {
 
   onBroadcast = vi.fn(
     (
-      _event: string,
-      _handler: (payload: BroadcastPayload) => void,
+      event: string,
+      handler: (payload: BroadcastPayload) => void,
     ): Unsubscribe => {
-      return vi.fn();
+      const handlers = this._broadcastHandlers.get(event) ?? [];
+      handlers.push(handler);
+      this._broadcastHandlers.set(event, handlers);
+      const unsubscribe = vi.fn(() => {
+        const current = this._broadcastHandlers.get(event) ?? [];
+        this._broadcastHandlers.set(
+          event,
+          current.filter((h) => h !== handler),
+        );
+      });
+      return unsubscribe;
     },
   );
 
@@ -61,6 +72,13 @@ export class MockRealtimeChannel implements RealtimeChannel {
 
   async simulateMessage(event: MessageEvent): Promise<void> {
     await Promise.all(this._messageHandlers.map((h) => h(event)));
+  }
+
+  simulateBroadcast(event: string, payload: BroadcastPayload): void {
+    const handlers = this._broadcastHandlers.get(event) ?? [];
+    for (const handler of handlers) {
+      handler(payload);
+    }
   }
 }
 

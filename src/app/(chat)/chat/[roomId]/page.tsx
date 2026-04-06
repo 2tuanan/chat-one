@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import ChatHeader from "@/components/chat/chat-header";
-import MessageInput from "@/components/chat/message-input";
-import MessageList from "@/components/chat/message-list";
+import ChatArea from "@/components/chat/chat-area";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { MessageWithProfile } from "@/types/messages";
 import type { Room } from "@/types/rooms";
@@ -72,10 +70,12 @@ export default async function RoomPage({ params }: RoomPageProps) {
         .map((message) => normalizeMessage(message));
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <ChatHeader room={room} memberCount={memberCount} />
-      <MessageList roomId={roomId} initialMessages={initialMessages} />
-      <MessageInput roomId={roomId} />
-    </div>
+    <ChatArea
+      roomId={roomId}
+      room={room}
+      memberCount={memberCount}
+      currentUserId={authData.user.id}
+      initialMessages={initialMessages}
+    />
   );
 }
