@@ -13,6 +13,7 @@ import type {
 export class MockRealtimeChannel implements RealtimeChannel {
   private _messageHandlers: Array<(event: MessageEvent) => void | Promise<void>> = [];
   private _broadcastHandlers: Map<string, Array<(payload: BroadcastPayload) => void>> = new Map();
+  private _presenceSyncHandlers: Array<(state: Record<string, PresencePayload[]>) => void> = [];
   private _status: RealtimeStatus = "connecting";
 
   get status(): RealtimeStatus {
@@ -52,9 +53,15 @@ export class MockRealtimeChannel implements RealtimeChannel {
 
   onPresenceSync = vi.fn(
     (
-      _handler: (state: Record<string, PresencePayload[]>) => void,
+      handler: (state: Record<string, PresencePayload[]>) => void,
     ): Unsubscribe => {
-      return vi.fn();
+      this._presenceSyncHandlers.push(handler);
+      const unsubscribe = vi.fn(() => {
+        this._presenceSyncHandlers = this._presenceSyncHandlers.filter(
+          (h) => h !== handler,
+        );
+      });
+      return unsubscribe;
     },
   );
 
@@ -78,6 +85,12 @@ export class MockRealtimeChannel implements RealtimeChannel {
     const handlers = this._broadcastHandlers.get(event) ?? [];
     for (const handler of handlers) {
       handler(payload);
+    }
+  }
+
+  simulatePresenceSync(state: Record<string, PresencePayload[]>): void {
+    for (const handler of this._presenceSyncHandlers) {
+      handler(state);
     }
   }
 }

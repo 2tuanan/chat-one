@@ -6,12 +6,13 @@ import type { Room } from "@/types/rooms";
 type ChatHeaderProps = {
   room: Room;
   memberCount?: number;
+  onlineCount: number;
 };
 
 const formatRoomType = (type: Room["type"]) =>
   type === "direct" ? "Direct" : "Group";
 
-export default function ChatHeader({ room, memberCount }: ChatHeaderProps) {
+export default function ChatHeader({ room, memberCount, onlineCount }: ChatHeaderProps) {
   return (
     <header className="border-b border-zinc-200 bg-white px-6 py-4">
       <div className="flex items-center justify-between">
@@ -28,9 +29,18 @@ export default function ChatHeader({ room, memberCount }: ChatHeaderProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600">
-          <Users className="h-3.5 w-3.5" />
-          <span>{memberCount ?? 0} members</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600">
+            <Users className="h-3.5 w-3.5" />
+            <span>{memberCount ?? 0} members</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600"
+            aria-label={`${onlineCount} users online`}
+          >
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+            <span>{onlineCount} online</span>
+          </div>
         </div>
       </div>
     </header>

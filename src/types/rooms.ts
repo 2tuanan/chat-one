@@ -1,3 +1,5 @@
+import type { PresencePayload } from "@/lib/realtime/types";
+
 export type RoomType = "direct" | "group";
 export type MemberRole = "owner" | "admin" | "member";
 
@@ -21,4 +23,9 @@ export interface RoomMember {
 export interface RoomWithMeta extends Room {
   member_count: number;
   unread_count?: number;
+}
+
+export interface UsePresenceReturn {
+  onlineUsers: PresencePayload[];
+  onlineCount: number;
 }

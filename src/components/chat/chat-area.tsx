@@ -23,11 +23,11 @@ export default function ChatArea({
   currentUserId,
   initialMessages,
 }: ChatAreaProps) {
-  const { broadcastTyping, typingUsers } = useChatMessages(roomId, currentUserId);
+  const { broadcastTyping, typingUsers, onlineCount } = useChatMessages(roomId, currentUserId);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ChatHeader room={room} memberCount={memberCount} />
+      <ChatHeader room={room} memberCount={memberCount} onlineCount={onlineCount} />
       <MessageList roomId={roomId} initialMessages={initialMessages} />
       <TypingIndicator typingUsers={typingUsers} />
       <MessageInput roomId={roomId} broadcastTyping={broadcastTyping} />

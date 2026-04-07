@@ -59,3 +59,20 @@ Impact: Duplicate message if Realtime fires twice
 for foreign sender — rare in practice
 Fix: Add id-based dedup in appendNewMessage or
 in use-realtime-messages.ts in Story 2.1
+
+## TD-11 — useThrottle render-time setState needs comment
+Source: Story 1.5 QA
+Impact: Future devs may flag as bug
+Fix: Comment added in apply-qa-fixes ✅
+
+## TD-12 — Non-string generic payload test coverage
+Source: Story 1.5 QA  
+Impact: <T> claim unproven empirically for number/object
+Fix: One test per hook added in apply-qa-fixes ✅
+
+## TD-13 — F-02 member management bug blocks two-user presence smoke test
+Source: Story 2.3, F-02
+Impact: Medium — smoke test of presence between two real users
+impossible until member management (invite/join by link) is built
+Fix: Complete F-02 member join flow; then re-run two-user
+presence smoke test manually

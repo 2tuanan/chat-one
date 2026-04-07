@@ -1,4 +1,5 @@
 import type { Profile } from "@/types/auth";
+import type { PresencePayload } from "@/lib/realtime/types";
 
 export type MessageStatus = "sending" | "sent" | "error";
 export type MessageType = "text" | "system";
@@ -37,4 +38,6 @@ export interface UseTypingReturn {
 export interface ChatMessagesReturn {
   broadcastTyping: (isTyping: boolean) => void;
   typingUsers: TypingUser[];
+  onlineUsers: PresencePayload[];
+  onlineCount: number;
 }
