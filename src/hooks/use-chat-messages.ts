@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getDefaultRealtimeProvider,
   supabaseFetchMessageById,
@@ -17,6 +17,10 @@ export function useChatMessages(
   currentUserId: string | null,
 ): ChatMessagesReturn {
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+  // Tracks whether the current channel has been disposed (removed during cleanup).
+  // Prevents logging CHANNEL_ERROR status events that fire during normal teardown
+  // when navigating between rooms.
+  const disposedRef = useRef(false);
 
   const username = useAuthStore((state) => state.profile?.username ?? null);
 
@@ -28,10 +32,15 @@ export function useChatMessages(
     if (!roomId || !currentUserId || !username) return;
 
     const provider = getDefaultRealtimeProvider();
+    // Reset disposed flag — this is a fresh channel, not a teardown
+    disposedRef.current = false;
     const ch = provider.createChannel(roomId);
     setChannel(ch);
 
     return () => {
+      // Mark as disposed BEFORE removeChannel so the subscribe status callback
+      // ignores any CHANNEL_ERROR events fired during teardown
+      disposedRef.current = true;
       provider.removeChannel(ch);
       setChannel(null);
     };
@@ -58,6 +67,10 @@ export function useChatMessages(
     if (!channel || !currentUserId || !username) return;
 
     channel.subscribe((status, err) => {
+      // Ignore all status events after the channel has been disposed — these are
+      // teardown artifacts (e.g. CHANNEL_ERROR fired by Supabase during removal)
+      // and not real errors.
+      if (disposedRef.current) return;
       if (status === "subscribed") {
         console.debug("[realtime] subscribed to room:", roomId);
         channel.track({

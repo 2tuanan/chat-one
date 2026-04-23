@@ -6,7 +6,7 @@ import {
   SendMessageSchema,
   type SendMessageInput,
 } from "@/lib/validation/messages";
-import type { MessageWithProfile } from "@/types/messages";
+import type { MessageWithProfile, PaginatedMessages } from "@/types/messages";
 
 export type SendMessageResult = {
   message?: MessageWithProfile;
@@ -77,4 +77,46 @@ export async function sendMessage(
   }
 
   return { message: normalizeMessage(message as RawMessage) };
+}
+
+export async function fetchOlderMessages(
+  roomId: string,
+  cursor: string,
+  limit: number = 50,
+): Promise<PaginatedMessages> {
+  if (!roomId || !cursor) {
+    return { messages: [], nextCursor: null, hasMore: false };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    return { messages: [], nextCursor: null, hasMore: false };
+  }
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select(
+      "id, room_id, sender_id, content, type, created_at, updated_at, deleted_at, sender:profiles!sender_id(id, username, display_name, avatar_url)",
+    )
+    .eq("room_id", roomId)
+    .is("deleted_at", null)
+    .lt("created_at", cursor)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) {
+    return { messages: [], nextCursor: null, hasMore: false };
+  }
+
+  // Reverse to ASC order (oldest first), matching initialMessages order from RSC
+  const reversed = (data as RawMessage[]).reverse().map(normalizeMessage);
+
+  // nextCursor = created_at of the oldest message in this page
+  // After reversing, reversed[0] is the oldest (was last in DESC result)
+  const hasMore = data.length === limit;
+  const nextCursor = hasMore ? (reversed[0]?.created_at ?? null) : null;
+
+  return { messages: reversed, nextCursor, hasMore };
 }

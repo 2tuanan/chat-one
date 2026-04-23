@@ -33,7 +33,7 @@ export default async function ChatLayout({
         <aside className="w-full max-w-xs border-r border-zinc-200 bg-zinc-50">
           <RoomList />
         </aside>
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col h-screen">{children}</main>
       </div>
     </AuthHydration>
   );

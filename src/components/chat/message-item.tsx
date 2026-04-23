@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AlertTriangle, Loader2, RefreshCcw } from "lucide-react";
 import type { MessageStatus, MessageWithProfile, OptimisticMessage } from "@/types/messages";
 
@@ -5,6 +6,7 @@ type MessageItemProps = {
   message: MessageWithProfile | OptimisticMessage;
   isOwn: boolean;
   onRetry?: (tempId: string, content: string) => void;
+  measureRef?: (el: HTMLElement | null) => void;
 };
 
 const isOptimistic = (
@@ -48,7 +50,7 @@ const getInitials = (name: string) =>
     .filter(Boolean)
     .join("");
 
-export default function MessageItem({ message, isOwn, onRetry }: MessageItemProps) {
+export default memo(function MessageItem({ message, isOwn, onRetry, measureRef }: MessageItemProps) {
   const senderName = message.sender.display_name || message.sender.username;
   const initials = getInitials(senderName);
   const status: MessageStatus = isOptimistic(message)
@@ -56,7 +58,7 @@ export default function MessageItem({ message, isOwn, onRetry }: MessageItemProp
     : "sent";
 
   return (
-    <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
+    <div ref={measureRef} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div
         className={`flex max-w-[75%] gap-3 rounded-2xl px-4 py-3 shadow-sm ${
           isOwn
@@ -112,4 +114,4 @@ export default function MessageItem({ message, isOwn, onRetry }: MessageItemProp
       </div>
     </div>
   );
-}
+});

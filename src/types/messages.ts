@@ -41,3 +41,17 @@ export interface ChatMessagesReturn {
   onlineUsers: PresencePayload[];
   onlineCount: number;
 }
+
+export interface PaginatedMessages {
+  messages: MessageWithProfile[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface UseInfiniteMessagesReturn {
+  messages: (MessageWithProfile | OptimisticMessage)[];
+  cursor: string | null;
+  hasMore: boolean;
+  isLoading: boolean;
+  loadMore: () => void;
+}
