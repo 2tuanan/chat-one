@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateRoomSchema } from "@/lib/validation/rooms";
+import { AddMemberSchema, CreateRoomSchema } from "@/lib/validation/rooms";
 
 describe("CreateRoomSchema", () => {
   describe("name", () => {
@@ -85,5 +85,61 @@ describe("CreateRoomSchema", () => {
       });
       expect(result.success).toBe(false);
     });
+  });
+});
+
+describe("AddMemberSchema", () => {
+  it("rejects usernames shorter than 3 characters", () => {
+    const result = AddMemberSchema.safeParse({ username: "ab" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.username).toBeDefined();
+    }
+  });
+
+  it("rejects usernames longer than 30 characters", () => {
+    const result = AddMemberSchema.safeParse({ username: "a".repeat(31) });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects uppercase letters", () => {
+    const result = AddMemberSchema.safeParse({ username: "Alice" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects spaces", () => {
+    const result = AddMemberSchema.safeParse({ username: "john doe" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects special characters", () => {
+    const result = AddMemberSchema.safeParse({ username: "user@name" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid lowercase username", () => {
+    const result = AddMemberSchema.safeParse({ username: "alice_99" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.username).toBe("alice_99");
+    }
+  });
+
+  it("trims whitespace before validating", () => {
+    const result = AddMemberSchema.safeParse({ username: "  alice  " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.username).toBe("alice");
+    }
+  });
+
+  it("accepts username at exactly 3 characters", () => {
+    const result = AddMemberSchema.safeParse({ username: "bob" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts username at exactly 30 characters", () => {
+    const result = AddMemberSchema.safeParse({ username: "a".repeat(30) });
+    expect(result.success).toBe(true);
   });
 });

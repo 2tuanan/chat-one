@@ -76,3 +76,4 @@ Impact: Medium — smoke test of presence between two real users
 impossible until member management (invite/join by link) is built
 Fix: Complete F-02 member join flow; then re-run two-user
 presence smoke test manually
+**Status: RESOLVED ✅ — Story 2.5 (addRoomMember, inline Add Member UI, memberCount fix)**

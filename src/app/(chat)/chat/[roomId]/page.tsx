@@ -52,6 +52,15 @@ export default async function RoomPage({ params }: RoomPageProps) {
     redirect("/chat");
   }
 
+  const { count: memberCount, error: memberCountError } = await supabase
+    .from("room_members")
+    .select("*", { count: "exact", head: true })
+    .eq("room_id", roomId);
+
+  if (memberCountError) {
+    redirect("/chat");
+  }
+
   const { data: messagesData, error: messagesError } = await supabase
     .from("messages")
     .select(
@@ -62,18 +71,18 @@ export default async function RoomPage({ params }: RoomPageProps) {
     .limit(50);
 
   const room = roomData as RoomRow;
-  const memberCount = room.room_members?.length ?? 0;
-    const initialMessages = messagesError || !messagesData
+  const initialMessages =
+    messagesError || !messagesData
       ? []
       : (messagesData as RawMessage[])
-        .reverse()
-        .map((message) => normalizeMessage(message));
+          .reverse()
+          .map((message) => normalizeMessage(message));
 
   return (
     <ChatArea
       roomId={roomId}
       room={room}
-      memberCount={memberCount}
+      memberCount={memberCount ?? 0}
       currentUserId={authData.user.id}
       initialMessages={initialMessages}
     />

@@ -27,7 +27,13 @@ export default function ChatArea({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ChatHeader room={room} memberCount={memberCount} onlineCount={onlineCount} />
+      <ChatHeader
+        room={room}
+        roomId={roomId}
+        currentUserId={currentUserId}
+        memberCount={memberCount}
+        onlineCount={onlineCount}
+      />
       <MessageList roomId={roomId} initialMessages={initialMessages} />
       <TypingIndicator typingUsers={typingUsers} />
       <MessageInput roomId={roomId} broadcastTyping={broadcastTyping} />

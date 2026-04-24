@@ -29,3 +29,11 @@ export interface UsePresenceReturn {
   onlineUsers: PresencePayload[];
   onlineCount: number;
 }
+
+export type AddMemberResult = {
+  success?: true;
+  addedUsername?: string;
+  newMemberCount?: number;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+};

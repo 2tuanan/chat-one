@@ -14,5 +14,18 @@ export const CreateRoomSchema = z.object({
   type: z.enum(["direct", "group"]).default("group"),
 });
 
+export const AddMemberSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, { message: "Username must be at least 3 characters." })
+    .max(30, { message: "Username must be at most 30 characters." })
+    .regex(/^[a-z0-9_]+$/, {
+      message:
+        "Username may only contain lowercase letters, numbers, and underscores.",
+    }),
+});
+
 export type CreateRoomInput = z.infer<typeof CreateRoomSchema>;
 export type CreateRoomFormValues = z.input<typeof CreateRoomSchema>;
+export type AddMemberInput = z.infer<typeof AddMemberSchema>;
