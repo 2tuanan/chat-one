@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useRoomStore } from "@/store/room-store";
 import type { Room } from "@/types/rooms";
 import RoomItem from "@/components/rooms/room-item";
 import CreateRoomDialog from "@/components/rooms/create-room-dialog";
+import RoomSearch from "@/components/rooms/room-search";
 
 type RoomListClientProps = {
   initialRooms: Room[];
 };
 
 export default function RoomListClient({ initialRooms }: RoomListClientProps) {
+  const [query, setQuery] = useState("");
   const setRooms = useRoomStore((state) => state.setRooms);
   const rooms = useRoomStore(
     useShallow((state) =>
@@ -42,8 +44,20 @@ export default function RoomListClient({ initialRooms }: RoomListClientProps) {
         </div>
         <CreateRoomDialog />
       </div>
+      <div className="border-b border-zinc-200 px-3 py-2">
+        <input
+          type="search"
+          placeholder="Search rooms & people..."
+          aria-label="Search rooms and people"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-zinc-400"
+        />
+      </div>
       <div className="flex-1 overflow-y-auto px-2 py-3">
-        {rooms.length === 0 ? (
+        {query.trim().length >= 2 ? (
+          <RoomSearch query={query} />
+        ) : rooms.length === 0 ? (
           <p className="px-3 py-6 text-sm text-zinc-500">
             No rooms yet. Create one to get started.
           </p>

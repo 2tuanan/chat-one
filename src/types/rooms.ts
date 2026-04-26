@@ -1,4 +1,5 @@
 import type { PresencePayload } from "@/lib/realtime/types";
+import type { Profile } from "@/types/auth";
 
 export type RoomType = "direct" | "group";
 export type MemberRole = "owner" | "admin" | "member";
@@ -37,3 +38,13 @@ export type AddMemberResult = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
+
+export type SearchUser = Pick<
+  Profile,
+  "id" | "username" | "display_name" | "avatar_url"
+>;
+
+export interface SearchResult {
+  rooms: Room[];
+  users: SearchUser[];
+}
